@@ -59,6 +59,13 @@ notifiers:
       enable: null
     optional:
       template: "{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}} is {{status}}!{{ '\n' -}}"
+  mqtt:
+    required:
+      host: null
+      port: null
+    optional:
+      username: null
+      password: null
 
 
 indicators:

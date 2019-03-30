@@ -33,6 +33,8 @@ from notifiers.gmail_client import GmailNotifier
 from notifiers.telegram_client import TelegramNotifier
 from notifiers.webhook_client import WebhookNotifier
 from notifiers.stdout_client import StdoutNotifier
+from notifiers.file_client import FileNotifier
+from notifiers.mqtt import MqttNotifier
 
 from analyzers.utils import IndicatorUtils
 
@@ -93,6 +95,16 @@ class Notifier(IndicatorUtils):
             )
             enabled_notifiers.append('gmail')
 
+        self.mqtt_configured = self._validate_required_config('mqtt', notifier_config)
+        if self.mqtt_configured:
+            self.mqtt_client = MqttNotifier(
+                host=notifier_config['mqtt']['required']['host'],
+                port=notifier_config['mqtt']['required']['port'],
+                username=notifier_config['mqtt']['optional'].get('username'),
+                password=notifier_config['mqtt']['optional'].get('password')
+            )
+            enabled_notifiers.append('mqtt')
+
         self.telegram_configured = self._validate_required_config('telegram', notifier_config)
         if self.telegram_configured:
             self.telegram_client = TelegramNotifier(
@@ -115,6 +127,16 @@ class Notifier(IndicatorUtils):
         if self.stdout_configured:
             self.stdout_client = StdoutNotifier()
             enabled_notifiers.append('stdout')
+
+        self.file_configured = self._validate_required_config('file', notifier_config)
+        if self.file_configured:
+            if 'dir' in notifier_config['file']['required']:
+                self.file_client = FileNotifier(
+                    dir=notifier_config['file']['required']['dir']
+                )
+            else:
+                self.file_client = FileNotifier()
+            enabled_notifiers.append('file')
 
         self.logger.info('enabled notifers: %s', enabled_notifiers)
 
@@ -140,9 +162,11 @@ class Notifier(IndicatorUtils):
         self.notify_discord(messages)
         self.notify_twilio(new_analysis)
         self.notify_gmail(new_analysis)
+		self.notify_mqtt(new_analysis)
         self.notify_telegram(messages)
         self.notify_webhook(messages)
         self.notify_stdout(new_analysis)
+		self.notify_file(new_analysis)
 
     def notify_discord(self, messages):
         """Send a notification via the discord notifier
@@ -220,6 +244,24 @@ class Notifier(IndicatorUtils):
             if message.strip():
                 self.gmail_client.notify(message)
 
+	def notify_mqtt(self, data):
+        """Send a notification via the gmail notifier
+
+        Args:
+            data (dict): The messages to send.
+        """
+        if self.mqtt_configured:
+            self.mqtt_client.connect()
+            for exchange in data.keys():
+                for key in data[exchange]:
+                    for time_span in data[exchange][key]:
+                        i = 0
+                        for value in data[exchange][key][time_span]:
+                            indicator = value['indicator'] if i == 0 else value['indicator'] + "_%s" % i
+                            self.mqtt_client.notify(
+                                exchange, key,
+                                time_span, indicator, value)
+            self.mqtt_client.disconnect()
 
     def notify_telegram(self, messages):
         """Send notifications via the telegram notifier
@@ -304,6 +346,26 @@ class Notifier(IndicatorUtils):
             )
             if message.strip():
                 self.stdout_client.notify(message)
+
+    def notify_file(self, new_analysis):
+        """Send a notification via the file notifier
+
+        Args:
+            new_analysis (dict): The new_analysis to send.
+        """
+
+        if self.file_configured:
+            for exchange in new_analysis:
+                for market in new_analysis[exchange]:
+                    for indicator_type in new_analysis[exchange][market]:
+                        for indicator in new_analysis[exchange][market][indicator_type]:
+                            for index, analysis in enumerate(new_analysis[exchange][market][indicator_type][indicator]):
+                                analysis_dict = analysis['result'].to_dict(orient='records')
+                                if analysis_dict:
+                                    new_analysis[exchange][market][indicator_type][indicator][index] = analysis_dict[-1]
+                                else:
+                                    new_analysis[exchange][market][indicator_type][indicator][index] = ''
+            self.file_client.notify(new_analysis)
 
     def _validate_required_config(self, notifier, notifier_config):
         """Validate the required configuration items are present for a notifier.

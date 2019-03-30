@@ -9,6 +9,7 @@ import pandas
 from talib import abstract
 
 from analyzers.indicators import *
+from analyzers.indicators import sar
 from analyzers.informants import *
 from analyzers import *
 
@@ -32,9 +33,11 @@ class StrategyAnalyzer():
             'ichimoku': ichimoku.Ichimoku().analyze,
             'macd': macd.MACD().analyze,
             'rsi': rsi.RSI().analyze,
+            'sar': sar.SAR().analyze,
             'momentum': momentum.Momentum().analyze,
             'mfi': mfi.MFI().analyze,
             'stoch_rsi': stoch_rsi.StochasticRSI().analyze,
+			'adx': adx.ADX().analyze,
             'obv': obv.OBV().analyze,
             'iiv': iiv.IIV().analyze,
             'ma_ribbon': ma_ribbon.MARibbon().analyze,
@@ -58,6 +61,7 @@ class StrategyAnalyzer():
             'ema': ema.EMA().analyze,
             'vwap': vwap.VWAP().analyze,
             'bollinger_bands': bollinger_bands.Bollinger().analyze,
+			'atr': atr.ATR().analyze,
             'ohlcv': ohlcv.OHLCV().analyze,
             'lrsi': lrsi.LRSI().analyze
         }
