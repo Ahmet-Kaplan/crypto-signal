@@ -10,6 +10,9 @@ Development branch to testing new features. If you are looking for the latest st
 - New indicator iiv (Increase In Volume) to try to identify a pump/dump.
 - New indicator MA Ribbon
 - New config values "hot_label" and "cold_label" for each indicator setup to set custom texts instead of the typical "hot" and "cold".
+- New indicator ADX (Average Directional Index)
+- New indicator Klinger Oscillator
+
 
 ## Installing And Running
 Because this is a development branch you need to build your custom Docker image. The commands listed below are intended to be run in a terminal.
@@ -130,6 +133,186 @@ informants:
           candle_period: 4h
           period_count: 14
 ```
+
+#### Candlestick Pattern Recognition - candle_recognition
+
+Uses TA-LIB for candlestick pattern recognition
+https://github.com/mrjbq7/ta-lib
+
+* Set up `signal` for all candle patterns you want to check.
+* Set up `candle_check` for how many candles you want to check. (default = 1 = checks last candle for pattern)
+    For example your bot runs every 4 hours, but you want to check the candles of 1 hour, you can set it to trigger if the pattern happened on the last 4 candles
+* Set up `notification` for what kind of notification you want when triggered, depending on what candle you check for. (default = hot)
+* Possible to enable coloring on candle chart: allows for 5 different candles, priority coloring from up to down
+* `Candle_check` allows for checking multiple candles for a pattern. [1=last candle, 2=last 2 candles etc]
+    For example, if the program runs every 4 hours but you setup a candle recognition for 1 hour you can get a notification if there was a candle found in
+    the last 4 candles by setting `candle_check:4`.
+
+<details>
+    <summary>possible signals</summary>
+
+```
+'two_crows': talib.CDLTRISTAR
+'three_black_crows': talib.CDL3BLACKCROWS
+'three_inside_up_down': talib.CDL3INSIDE
+'three_line_strike': talib.CDL3LINESTRIKE
+'thee_stars_in_the_south': talib.CDL3OUTSIDE
+'three_advancing_white_soldiers': talib.CDL3WHITESOLDIERS
+'abandoned_baby': talib.CDLABANDONEDBABY
+'advance_block': talib.CDLADVANCEBLOCK
+'belt_hold': talib.CDLADVANCEBLOCK
+'breakaway': talib.CDLBREAKAWAY
+'closing_marubozu': talib.CDLCLOSINGMARUBOZU
+'concealing_baby_swallow': talib.CDLCONCEALBABYSWALL
+'counterattack': talib.CDLCOUNTERATTACK
+'dark_cloud_cover': talib.CDLDARKCLOUDCOVER
+'doji': talib.CDLDOJI
+'doji_star': talib.CDLDOJISTAR
+'dragonfly_doji': talib.CDLDRAGONFLYDOJI
+'engulfing_pattern': talib.CDLENGULFING
+'evening_doji_star': talib.CDLEVENINGDOJISTAR
+'evening_star': talib.CDLEVENINGSTAR
+'gap_sidesidewhite': talib.CDLGAPSIDESIDEWHITE
+'gravestone_doji': talib.CDLGRAVESTONEDOJI
+'hammer': talib.CDLHAMMER
+'hanging_man': talib.CDLHANGINGMAN
+'harami_pattern': talib.CDLHARAMI
+'harami_cross_patern': talib.CDLHARAMICROSS
+'high_wave_candle': talib.CDLHIGHWAVE
+'modified_hikkake_pattern': talib.CDLHIKKAKEMOD
+'homing_pigeon': talib.CDLHOMINGPIGEON
+'identical_three_crows': talib.CDLIDENTICAL3CROWS
+'in_neck_pattern': talib.CDLINNECK
+'inverted_hammer': talib.CDLINVERTEDHAMMER
+'kicking': talib.CDLKICKING
+'kicking_bb': talib.CDLKICKINGBYLENGTH
+'ladder_bottom': talib.CDLLADDERBOTTOM
+'long_legged_doji': talib.CDLLONGLEGGEDDOJI
+'long_line_candle': talib.CDLLONGLINE
+'marubozu': talib.CDLMARUBOZU
+'matching_low': talib.CDLMATCHINGLOW
+'mat_hold': talib.CDLMATHOLD
+'morning_doji_star': talib.CDLMORNINGDOJISTAR
+'morning_star': talib.CDLMORNINGSTAR
+'on_neck_pattern': talib.CDLONNECK
+'piercing_pattern': talib.CDLPIERCING
+'rickshaw_man': talib.CDLRICKSHAWMAN
+'risfall_three_methods': talib.CDLRISEFALL3METHODS
+'seperating_lines': talib.CDLSEPARATINGLINES
+'shooting_star': talib.CDLSHOOTINGSTAR
+'short_line_candle': talib.CDLSHORTLINE
+'spinning_top': talib.CDLSPINNINGTOP
+'stalled_pattern': talib.CDLSTALLEDPATTERN
+'stick_sandwich': talib.CDLSTICKSANDWICH
+'takuri': talib.CDLTAKURI
+'tasuki_gap': talib.CDLTASUKIGAP
+'thrusting_pattern': talib.CDLTHRUSTING
+'tristar_pattern': talib.CDLTRISTAR
+'unique_three_river': talib.CDLUNIQUE3RIVER
+'upside_gap_two_crows': talib.CDLUPSIDEGAP2CROWS
+'xside_gap_three_methods': talib.CDLXSIDEGAP3METHODS
+```
+</details>
+
+```
+indicators:
+  candle_recognition:
+    - enabled: true
+      alert_enabled: true
+      alert_frequency: always
+      signal:
+        - doji
+      candle_check: 1
+      notification: hot
+      candle_period: 1d
+      hot: 0
+      cold: 0
+      chart: true
+```
+
+#### Aroon Oscillator - aroon_oscillator
+
+The Aroon Oscillator is the difference between Aroon-Up and Aroon-Down. These two indicators are usually plotted together for easy comparison, but chartists can also view the difference between these two indicators with the Aroon Oscillator. This indicator fluctuates between -100 and +100 with zero as the middle line. An upward trend bias is present when the oscillator is positive, while a downward trend bias exists when the oscillator is negative. 
+
+The Aroon Oscillator is positive AND daily volume was above the (default)50-day moving average of volume = hot notification
+The Aroon Oscillator is negative AND daily volume was above the (default)50-day moving average of volume = cold notification
+
+
+Periods in example are the default values
+
+```
+indicators:
+  aroon_oscillator:
+    - enabled: true
+      alert_enabled: true
+      alert_frequency: always
+      sma_vol_period = 50
+      period_count = 25
+      signal:
+        - aroon
+      candle_period: 1d
+      hot: 0
+      cold: 0
+```
+
+#### Klinger Oscillator - klinger_oscillator
+
+The Klinger oscillator (kvo) was developed by Stephen Klinger to determine the long-term trend of money flow
+while remaining sensitive enough to detect short-term fluctuations. The indicator compares the volume
+flowing through a security with the security's price movements and then converts the result into an oscillator.
+The Klinger oscillator shows the difference between two moving averages which are based on more than price.
+Traders watch for divergence on the indicator to signal potential price reversals.
+Like other oscillators, a signal line can be added to provide additional trade signals.
+
+If klinger signal line (kvo_signal) > 0 AND mean price is moving up from last candle = hot notification
+If klinger signal line (kvo_signal) < 0 AND mean price is moving down from last candle = cold notification
+mean price = (high + low + close) / 3
+
+Periods in example are the default values
+
+```
+indicators:
+  klinger_oscillator:
+    - enabled: true
+      alert_enabled: true
+      alert_frequency: always
+      ema_short_period = 34
+      ema_long_period = 55
+      signal_period = 13
+      signal:
+        - kvo
+        - kvo_signal
+      candle_period: 1d
+```
+
+#### Average Directional Index - adx
+
+The Average Directional Movement Index (ADX) is designed to quantify trend strength by measuring the amount of price movement in a single direction. ADX is non-directional; it registers trend strength whether price is trending up or down
+The ADX is part of the Directional Movement system published by J. Welles Wilder, and is the average resulting from the Directional Movement indicators.
+ADX calculations are based on a moving average of price range expansion over a given period of time. The default setting is 14 bars, although other time periods can be used. 
+When the +DMI(pdi) is above the -DMI(ndi), prices are moving up, and ADX measures the strength of the uptrend. When the -DMI(ndi) is above the +DMI(pdi), prices are moving down, and ADX measures the strength of the downtrend.
+
+0-25 absent or weak trend
+25-50 strong trend
+50-75 very strong trend
+75-100 extremely strong trend
+
+```
+indicators:
+  adx:
+    - enabled: true
+      alert_enabled: true
+      alert_frequency: always
+      signal:
+        - adx
+        - pdi
+        - ndi
+      hot: 50
+      cold: 25
+      candle_period: 1d
+      period_count: 14
+```
+
 #### Increase In Volume indicator - iiv
 
 There is a new indicator called "iiv" enabled for default for 5m period. The hot value is 5 by default, you can adjust it as you want, may be 10 o 15. This value is a measure about how strong is the increase in volume.
@@ -342,3 +525,49 @@ So, in the message template the "hot_cold_label" variable will have one of the t
 ```
 template: "[{{indicator_label}}] **{{hot_cold_label}}** {{market}}  Prices: [{{prices}}]"  
 ```
+
+
+### Price Values
+
+To use this feature it is necessary to configure "ohlcv" informant for each candle period of your indicators. For example, this config is used to get High, Low and Close prices for 1h and 4h indicators.
+
+```
+informants:
+    ....
+    bollinger_bands:
+        - enabled: false
+    ohlcv:
+        - enabled: true
+          signal:
+            - high
+            - low
+            - close
+          candle_period: 1h
+          period_count: 14
+        - enabled: true
+          signal:
+            - high
+            - low
+            - close
+          candle_period: 4h
+          period_count: 14
+          
+```
+
+Then you can use the "price_value" variable to have the values of prices and be able to do some operations on them.
+
+```
+notifiers:
+    telegram:
+        required:
+            token: 580514307:AAETsNsxs4QCdyEZ59vVROLlBxxxxx
+            chat_id: 2073900000
+        optional:
+            parse_mode: html
+            template: "{{ market }} 
+            BUY {{ price_value.close }} 
+            SL: {{ decimal_format|format(price_value.low * 0.9) }} 
+            TP: {{ decimal_format|format(price_value.close * 1.02) }} {{ decimal_format|format(price_value.close * 1.04) }} "
+```
+
+The code for "decimal_format" and "format" is necessary to obtain the prices formatted with the corresponding zeros.
